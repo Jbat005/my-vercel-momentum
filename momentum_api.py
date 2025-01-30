@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 from flask import Flask, jsonify
 from datetime import datetime, timedelta
-
+import os
 warnings.filterwarnings('ignore')
 
 
@@ -403,5 +403,7 @@ def index():
     return "Momentum API is running. Visit /api/momentum to fetch data."
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    from waitress import serve
+    port = int(os.environ.get("PORT", 8080))  # Default to 8080 if Railway doesn't set it
+    print(f"Starting server on port {port}...")
+    serve(app, host='0.0.0.0', port=port)
