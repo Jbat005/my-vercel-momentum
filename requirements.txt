@@ -6,3 +6,5 @@ yfinance==0.2.30
 numpy==1.23.5
 requests>=2.31
 Werkzeug==2.2.3
+flask-cors==4.0.0
+

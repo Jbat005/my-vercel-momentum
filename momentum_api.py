@@ -6,6 +6,10 @@ from flask import Flask, jsonify
 from datetime import datetime, timedelta
 import os
 from waitress import serve
+from flask_cors import CORS  # Import CORS
+
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 warnings.filterwarnings('ignore')
 
