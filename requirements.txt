@@ -5,3 +5,5 @@ numpy==1.23.5
 openpyxl==3.0.10
 plotly==5.13.1
 requests>=2.31
+Werkzeug==2.2.3
+
