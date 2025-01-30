@@ -1,26 +1,26 @@
-import os
-import yfinance as yf
 import pandas as pd
+import yfinance as yf
 import numpy as np
 import warnings
 from flask import Flask, jsonify
+from datetime import datetime, timedelta
 
-# Suppress warnings
 warnings.filterwarnings('ignore')
+
 
 # Flask app initialization
 app = Flask(__name__)
 
-# ------------------------
-#   Fetch S&P 500 Data
-# ------------------------
+# Get today's date and subtract 5 years + 25 days
+end_date = datetime.today().strftime('%Y-%m-%d')
+start_date = (datetime.today() - timedelta(days=5 * 365 + 25)).strftime('%Y-%m-%d')
 
 sp500_tickers = pd.read_excel(
     "https://www.ssga.com/us/en/intermediary/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx",
     header=4
 ).Ticker.dropna().to_list()
 
-df = yf.download(sp500_tickers, period='10y')
+df = yf.download(sp500_tickers, start=start_date, end=end_date)
 sp500 = df['Adj Close'].dropna(how='all', axis=1)
 
 time_period = 1260  # 5 years ~ 252 days/year
@@ -86,10 +86,6 @@ def get_long_basket():
     long_basket = calculate_z_scores(momentum_factors)[:10]
     return long_basket
 
-def get_short_basket():
-    momentum_factors = calculate_momentum_factors(0)
-    short_basket = calculate_z_scores(momentum_factors)[-10:]
-    return short_basket
 
 # ------------------------
 #   Flask API Routes
@@ -101,11 +97,9 @@ def momentum():
     short_basket = get_short_basket()
 
     long_list = [{"ticker": idx, "score": float(val)} for idx, val in long_basket.items()]
-    short_list = [{"ticker": idx, "score": float(val)} for idx, val in short_basket.items()]
 
     return jsonify({
         "longBasket": long_list,
-        "shortBasket": short_list
     })
 
 @app.route('/')
