@@ -1,23 +1,18 @@
 import os
-
-# Manually create the yFinance cache directory on Render
-CACHE_DIR = "/opt/render/.cache/py-yfinance"
-if not os.path.exists(CACHE_DIR):
-    os.makedirs(CACHE_DIR)
-
-# Now import yfinance
 import yfinance as yf
 import pandas as pd
 import numpy as np
 import warnings
 from flask import Flask, jsonify
 
+# Suppress warnings
 warnings.filterwarnings('ignore')
 
+# Flask app initialization
 app = Flask(__name__)
 
 # ------------------------
-#   Your Momentum Logic
+#   Fetch S&P 500 Data
 # ------------------------
 
 sp500_tickers = pd.read_excel(
@@ -31,6 +26,10 @@ sp500 = df['Adj Close'].dropna(how='all', axis=1)
 time_period = 1260  # 5 years ~ 252 days/year
 lag = 20            # ~1 month
 
+# ------------------------
+#   Momentum Calculation
+# ------------------------
+
 def calculate_momentum_factors(how_many_days_back=0):
     start_time = how_many_days_back + time_period + lag
     most_current_time = how_many_days_back + lag
@@ -39,7 +38,6 @@ def calculate_momentum_factors(how_many_days_back=0):
     rolling_mean_price = lagged_closed_price.rolling(window=time_period - 251).mean().dropna(how='all')
 
     # 52-week trend
-    import numpy as np
     slope_info = pd.DataFrame(index=sp500.columns)
     for i in range(1, lag + 1):
         slope_info[i] = rolling_mean_price.apply(
@@ -94,14 +92,11 @@ def get_short_basket():
     return short_basket
 
 # ------------------------
-#   Flask Routes
+#   Flask API Routes
 # ------------------------
 
 @app.route('/api/momentum', methods=['GET'])
 def momentum():
-    """
-    Returns JSON of top 10 (long) and bottom 10 (short).
-    """
     long_basket = get_long_basket()
     short_basket = get_short_basket()
 
@@ -115,9 +110,8 @@ def momentum():
 
 @app.route('/')
 def index():
-    return "Momentum API is running. Check /api/momentum for data."
+    return "Momentum API is running. Visit /api/momentum to fetch data."
 
 if __name__ == '__main__':
-    # By default, Render sets PORT environment variable.
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
