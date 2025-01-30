@@ -1,7 +1,13 @@
 import os
-import json
-import pandas as pd
+
+# Manually create the yFinance cache directory on Render
+CACHE_DIR = "/opt/render/.cache/py-yfinance"
+if not os.path.exists(CACHE_DIR):
+    os.makedirs(CACHE_DIR)
+
+# Now import yfinance
 import yfinance as yf
+import pandas as pd
 import numpy as np
 import warnings
 from flask import Flask, jsonify
