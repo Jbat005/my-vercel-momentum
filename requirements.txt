@@ -1,9 +1,9 @@
-Flask==2.2.3
+Flask==2.3.3
+Werkzeug==3.0.1
 pandas==1.5.3
 yfinance==0.2.30
 numpy==1.23.5
 openpyxl==3.0.10
 plotly==5.13.1
 requests>=2.31
-gunicorn==21.2.0
-setuptools
+gunicorn
