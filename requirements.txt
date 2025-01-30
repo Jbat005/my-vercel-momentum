@@ -6,3 +6,4 @@ openpyxl==3.0.10
 plotly==5.13.1
 requests>=2.31
 gunicorn==21.2.0
+setuptools
