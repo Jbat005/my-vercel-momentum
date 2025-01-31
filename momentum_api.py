@@ -2,14 +2,15 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 import warnings
-from flask import Flask, jsonify
 from datetime import datetime, timedelta
 import os
 from waitress import serve
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS  
+from flask import Flask, jsonify, request, make_response
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins, update all routes
+
 
 warnings.filterwarnings('ignore')
 
@@ -89,8 +90,20 @@ def get_long_basket():
 def momentum():
     long_basket = get_long_basket()
     long_list = [{"ticker": idx, "score": float(val)} for idx, val in long_basket.items()]
-    
-    return jsonify({"longBasket": long_list})
+
+    response = jsonify({"longBasket": long_list})
+    response.headers.add("Access-Control-Allow-Origin", "*")  # Allow all origins
+    response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    return response
+
+@app.route('/api/momentum', methods=['OPTIONS'])
+def options():
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    return response
 
 @app.route('/')
 def index():
