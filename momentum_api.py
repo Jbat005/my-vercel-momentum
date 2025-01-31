@@ -9,15 +9,11 @@ from flask_cors import CORS
 from flask import Flask, jsonify, request, make_response
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins, update all routes
-
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 warnings.filterwarnings('ignore')
 
-# Flask app initialization
-app = Flask(__name__)
-
-# Get today's date and subtract 4 years + 25 days
+# Get date ranges
 end_date = datetime.today().strftime('%Y-%m-%d')
 start_date = (datetime.today() - timedelta(days=4 * 365 + 25)).strftime('%Y-%m-%d')
 
@@ -32,7 +28,7 @@ sp500_tickers = [
 df = yf.download(sp500_tickers, start=start_date, end=end_date)
 sp500 = df['Adj Close'].dropna(how='all', axis=1)
 
-# Define momentum calculation parameters
+# Momentum calculation parameters
 time_period = 1008  # 4 years (252 days/year)
 lag = 20  # 1 month
 
@@ -66,7 +62,7 @@ def calculate_momentum_factors(how_many_days_back=0):
     # 39-week return
     returns_39w = lagged_closed_price.pct_change(periods=39 * 5).dropna(how='all').mean()
 
-    # Creating DataFrame
+    # Create DataFrame
     new_table = pd.DataFrame(index=sp500.columns)
     new_table['Slope 52 Week Trend-Line'] = _52_week_trend
     new_table['Percent above 260 Day Low'] = percent_above_260
@@ -85,16 +81,85 @@ def get_long_basket():
     long_basket = calculate_z_scores(momentum_factors)[:10]
     return long_basket
 
-# API Routes
+def monte_carlo_simulation(tickers, num_portfolios=10000):
+    """Run Monte Carlo simulation on long basket"""
+    try:
+        prices = sp500[tickers]
+        returns = prices.pct_change().dropna()
+        
+        # Portfolio metrics calculation
+        expected_returns = returns.mean() * 252
+        cov_matrix = returns.cov() * 252
+        
+        results = np.zeros((3, num_portfolios))
+        weights_record = []
+        
+        for i in range(num_portfolios):
+            weights = np.random.random(len(tickers))
+            weights /= np.sum(weights)
+            
+            portfolio_return = np.dot(weights, expected_returns)
+            portfolio_volatility = np.sqrt(weights.T @ cov_matrix @ weights)
+            sharpe_ratio = portfolio_return / portfolio_volatility  # Risk-free rate = 0
+            
+            results[0,i] = portfolio_return
+            results[1,i] = portfolio_volatility 
+            results[2,i] = sharpe_ratio
+            weights_record.append(weights)
+            
+        max_sharpe_idx = np.argmax(results[2])
+        optimal_weights = weights_record[max_sharpe_idx]
+        
+        return {
+            'weights': optimal_weights,
+            'return': results[0,max_sharpe_idx],
+            'volatility': results[1,max_sharpe_idx],
+            'sharpe': results[2,max_sharpe_idx]
+        }
+        
+    except Exception as e:
+        print(f"Monte Carlo error: {str(e)}")
+        return None
+
 @app.route('/api/momentum', methods=['GET'])
 def momentum():
-    long_basket = get_long_basket()
-    long_list = [{"ticker": idx, "score": float(val)} for idx, val in long_basket.items()]
-
-    response = jsonify({"longBasket": long_list})
-    response.headers.add("Access-Control-Allow-Origin", "*")  # Allow all origins
-    response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    try:
+        long_basket = get_long_basket()
+        long_list = [{"ticker": idx, "score": float(val)} for idx, val in long_basket.items()]
+        
+        # Get Monte Carlo results
+        mc_result = monte_carlo_simulation(long_basket.index.tolist())
+        
+        if mc_result:
+            optimized_weights = [
+                {"ticker": t, "weight": float(w)} 
+                for t, w in zip(long_basket.index, mc_result['weights'])
+            ]
+            metrics = {
+                "expectedReturn": float(mc_result['return']),
+                "volatility": float(mc_result['volatility']),
+                "sharpeRatio": float(mc_result['sharpe'])
+            }
+        else:
+            optimized_weights = []
+            metrics = {
+                "expectedReturn": 0,
+                "volatility": 0,
+                "sharpeRatio": 0
+            }
+        
+        response = jsonify({
+            "longBasket": long_list,
+            "optimizedWeights": optimized_weights,
+            "portfolioMetrics": metrics
+        })
+        
+    except Exception as e:
+        print(f"API error: {str(e)}")
+        response = jsonify({"error": "Internal server error"})
+        response.status_code = 500
+        
+    response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
 @app.route('/api/momentum', methods=['OPTIONS'])
@@ -107,7 +172,7 @@ def options():
 
 @app.route('/')
 def index():
-    return "Momentum API is running. Visit /api/momentum to fetch data."
+    return "Momentum API with Monte Carlo Optimization"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
