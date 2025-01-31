@@ -96,11 +96,11 @@ def monte_carlo_simulation(tickers, num_portfolios=10000):
         
         for i in range(num_portfolios):
             weights = np.random.random(len(tickers))
-            weights /= np.sum(weights)
+            weights /= np.sum(weights)  # Normalize to sum to 1.0
             
             portfolio_return = np.dot(weights, expected_returns)
             portfolio_volatility = np.sqrt(weights.T @ cov_matrix @ weights)
-            sharpe_ratio = portfolio_return / portfolio_volatility  # Risk-free rate = 0
+            sharpe_ratio = portfolio_return / portfolio_volatility
             
             results[0,i] = portfolio_return
             results[1,i] = portfolio_volatility 
@@ -109,13 +109,6 @@ def monte_carlo_simulation(tickers, num_portfolios=10000):
             
         max_sharpe_idx = np.argmax(results[2])
         optimal_weights = weights_record[max_sharpe_idx]
-        
-        # Ensure weights sum to 100%
-        total_weight = np.sum(optimal_weights)
-        if not np.isclose(total_weight, 1.0):
-            difference = 1.0 - total_weight
-            max_weight_index = np.argmax(optimal_weights)
-            optimal_weights[max_weight_index] += difference
         
         return {
             'weights': optimal_weights,
