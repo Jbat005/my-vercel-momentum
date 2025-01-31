@@ -109,14 +109,14 @@ def monte_carlo_simulation(tickers, num_portfolios=10000):
             
         max_sharpe_idx = np.argmax(results[2])
         optimal_weights = weights_record[max_sharpe_idx]
-
-        # Ensure weights sum to 100% by adjusting the largest allocation
+        
+        # Ensure weights sum to 100%
         total_weight = np.sum(optimal_weights)
-        weight_difference = 1.0 - total_weight  # e.g., 1.0 - 0.9999 = 0.0001
-        if abs(weight_difference) > 0.0001:
-            max_weight_idx = np.argmax(optimal_weights)
-            optimal_weights[max_weight_idx] += weight_difference  # Adjust the largest weight
-
+        if not np.isclose(total_weight, 1.0):
+            difference = 1.0 - total_weight
+            max_weight_index = np.argmax(optimal_weights)
+            optimal_weights[max_weight_index] += difference
+        
         return {
             'weights': optimal_weights,
             'return': results[0,max_sharpe_idx],
