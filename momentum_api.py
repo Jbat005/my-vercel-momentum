@@ -81,7 +81,7 @@ def get_long_basket():
     long_basket = calculate_z_scores(momentum_factors)[:10]
     return long_basket
 
-def monte_carlo_simulation(tickers, num_portfolios=10000):
+def monte_carlo_simulation(tickers, num_portfolios=50000):
     """Run Monte Carlo simulation on long basket"""
     try:
         prices = sp500[tickers]
