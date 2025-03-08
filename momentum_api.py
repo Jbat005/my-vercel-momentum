@@ -158,6 +158,7 @@ def momentum():
         print(f"API error: {str(e)}")
         response = jsonify({"error": "Internal server error"})
         response.status_code = 500
+
         
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
