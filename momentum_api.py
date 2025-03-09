@@ -81,7 +81,7 @@ def get_long_basket():
     long_basket = calculate_z_scores(momentum_factors)[:10]
     return long_basket
 
-def monte_carlo_simulation(tickers, num_portfolios=50000):
+def monte_carlo_simulation(tickers, num_portfolios):
     """Run Monte Carlo simulation on long basket"""
     try:
         prices = sp500[tickers]
@@ -124,16 +124,13 @@ def monte_carlo_simulation(tickers, num_portfolios=50000):
 @app.route('/api/momentum', methods=['GET'])
 def momentum():
     try:
-        long_basket = get_long_basket()
-        long_list = [{"ticker": idx, "score": float(val)} for idx, val in long_basket.items()]
-        
-        # Get Monte Carlo results
-        mc_result = monte_carlo_simulation(long_basket.index.tolist())
+
+        mc_result = monte_carlo_simulation(get_long_basket().index, 100)
         
         if mc_result:
             optimized_weights = [
                 {"ticker": t, "weight": float(w)} 
-                for t, w in zip(long_basket.index, mc_result['weights'])
+                for t, w in zip(get_long_basket().index, mc_result['weights'])
             ]
             metrics = {
                 "expectedReturn": float(mc_result['return']),
@@ -149,7 +146,7 @@ def momentum():
             }
         
         response = jsonify({
-            "longBasket": long_list,
+            "longBasket": get_long_basket().index,
             "optimizedWeights": optimized_weights,
             "portfolioMetrics": metrics
         })
