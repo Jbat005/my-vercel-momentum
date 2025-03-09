@@ -26,7 +26,7 @@ sp500_tickers = [
 
 # Retrieve stock data
 df = yf.download(sp500_tickers, start=start_date, end=end_date)
-sp500 = df['Adj Close'].dropna(how='all', axis=1)
+sp500 = df['Close'].dropna(how='all', axis=1)
 
 # Momentum calculation parameters
 time_period = 1008  # 4 years (252 days/year)
