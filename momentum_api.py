@@ -32,7 +32,7 @@ sp500 = df['Close'].dropna(how='all', axis=1)
 time_period = 1008  # 4 years (252 days/year)
 lag = 20  # 1 month
 
-def calculate_momentum_factors(how_many_days_back=0):
+def calculate_momentum_factors(how_many_days_back):
     start_time = how_many_days_back + time_period + lag
     most_current_time = how_many_days_back + lag
 
@@ -125,12 +125,12 @@ def monte_carlo_simulation(tickers, num_portfolios):
 def momentum():
     try:
 
-        mc_result = monte_carlo_simulation(get_long_basket().index, 100)
+        mc_result = monte_carlo_simulation(get_long_basket().index.tolist(), 100)
         
         if mc_result:
             optimized_weights = [
                 {"ticker": t, "weight": float(w)} 
-                for t, w in zip(get_long_basket().index, mc_result['weights'])
+                for t, w in zip(get_long_basket().index.tolist(), mc_result['weights'])
             ]
             metrics = {
                 "expectedReturn": float(mc_result['return']),
@@ -146,7 +146,6 @@ def momentum():
             }
         
         response = jsonify({
-            "longBasket": get_long_basket().index,
             "optimizedWeights": optimized_weights,
             "portfolioMetrics": metrics
         })
